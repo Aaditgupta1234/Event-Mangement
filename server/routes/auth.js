@@ -59,16 +59,9 @@ router.post('/signup', signupValidation, asyncHandler(async (req, res, next) => 
     throw new AppError('Server configuration error', 500);
   }
 
-  // Verify admin passkey if role is admin
+  // Admin accounts are seeded only and cannot be created through signup.
   if (role === 'admin') {
-    if (!adminPasskey) {
-      throw new AppError('Admin passkey is required for admin accounts', 400);
-    }
-    const envPasskey = (process.env.ADMIN_PASSKEY || '').trim();
-    if (adminPasskey !== envPasskey) {
-      logger.warn('Failed admin signup attempt - invalid passkey', { email, ip: req.ip });
-      throw new AppError('Invalid admin passkey', 403);
-    }
+    throw new AppError('Admin accounts cannot be created through signup', 403);
   }
 
   // Check if user exists
@@ -109,12 +102,12 @@ router.post('/signup', signupValidation, asyncHandler(async (req, res, next) => 
     });
   }
 
-  // Create user for participant or admin
+  // Create user for participant
   const user = await User.create({
     name,
     email,
     password: hashedPassword,
-    role: role || 'participant'
+    role: role === 'host' ? 'host' : 'participant'
   });
 
   logger.info('New user registered', { userId: user._id, email: user.email, role: user.role });

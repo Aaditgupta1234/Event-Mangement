@@ -177,7 +177,6 @@ export default function Login() {
                 >
                   <option value="participant">Participant</option>
                   <option value="host">Host</option>
-                  <option value="admin">Admin</option>
                 </select>
               </div>
             )}
