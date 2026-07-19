@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="refresh" content="0; url=/Festify/" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Redirecting...</title>
+  </head>
+  <body>
+    <script>
+      // Preserve the intended route for the SPA to restore.
+      sessionStorage.setItem(
+        'redirect',
+        window.location.pathname + window.location.search + window.location.hash
+      );
+      window.location.replace('/Festify/');
+    </script>
+  </body>
+</html>

@@ -1,0 +1,1 @@
+import{j as e}from"./index-DUrJeW5y.js";function x({width:s="100%",height:a="20px",borderRadius:m="8px",count:r=1}){return e.jsx(e.Fragment,{children:[...Array(r)].map((n,t)=>e.jsx("div",{className:"skeleton",style:{width:s,height:a,borderRadius:m,marginBottom:t!==r-1?"12px":"0"}},t))})}export{x as S};
