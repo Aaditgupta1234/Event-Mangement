@@ -34,11 +34,7 @@ cd ../client
 npm install
 ```
 
-### 2. Setup MongoDB
-
-Make sure MongoDB is running locally on `mongodb://localhost:27017` or update the connection string in server/.env
-
-### 3. Configure Environment Variables
+### 2. Configure Environment Variables
 
 **Backend** (`server/.env`):
 
@@ -47,6 +43,7 @@ PORT=4000
 NODE_ENV=development
 MONGO_URI=mongodb://localhost:27017/festifyxr
 JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
+JWT_REFRESH_SECRET=your-super-secret-refresh-key-change-this-in-production
 CORS_ORIGIN=http://localhost:5173
 LOG_LEVEL=info
 ```
@@ -57,7 +54,7 @@ LOG_LEVEL=info
 VITE_API_URL=http://localhost:4000/api
 ```
 
-### 4. Seed the Database
+### 3. Seed the Database
 
 ```powershell
 cd server
@@ -91,6 +88,64 @@ npm run dev
 ```
 
 Frontend will run on http://localhost:5173
+
+## 🚀 Production Deployment
+
+### MongoDB Atlas
+
+1. Create a MongoDB Atlas cluster.
+2. Create a database user with least-privilege access.
+3. Add the Render outbound IPs or allow temporary access during setup.
+4. Use a connection string in this format:
+
+```env
+mongodb+srv://<username>:<password>@<cluster>.mongodb.net/festifyxr?retryWrites=true&w=majority&tls=true
+```
+
+5. Set the Atlas connection string as `MONGO_URI` in Render.
+
+### Render Backend
+
+1. Create a new Web Service from the repository root.
+2. Set the root directory to `server`.
+3. Use these commands:
+
+- Build: `npm ci`
+- Pre-deploy migration: `npm run migrate:host-request-indexes`
+- Start: `npm start`
+
+4. Set environment variables:
+
+- `MONGO_URI`
+- `JWT_SECRET`
+- `JWT_REFRESH_SECRET`
+- `CORS_ORIGIN`
+- `LOG_LEVEL`
+
+5. Set the health check path to `/health`.
+
+### Vercel Frontend
+
+1. Import the repository into Vercel.
+2. Set the root directory to `client`.
+3. Build command: `npm run build`
+4. Output directory: `dist`
+5. Set environment variable:
+
+- `VITE_API_URL` to your Render backend URL, for example `https://festifyxr-api.onrender.com/api`
+
+6. Keep the SPA rewrite in [client/vercel.json](client/vercel.json) so React Router refreshes work.
+
+### Deployment Checklist
+
+- MongoDB Atlas connection string is set in Render.
+- Render health check returns healthy.
+- Render pre-deploy migration completes successfully.
+- Vercel build succeeds.
+- React Router refreshes work on deployed routes.
+- `VITE_API_URL` points to the Render API.
+- `CORS_ORIGIN` matches the Vercel frontend URL.
+- `JWT_SECRET` and `JWT_REFRESH_SECRET` are set and strong.
 
 ## 🧪 Testing
 
@@ -181,29 +236,6 @@ Logs are stored in `server/logs/`:
 - Logs rotate daily
 - Retention: 14 days (application), 30 days (errors)
 
-## 🚧 Switching to New React Implementation
-
-The project has been refactored with proper React architecture. To use the new implementation:
-
-1. **Rename files**:
-
-```powershell
-# In client directory
-mv index.html index-old.html
-mv index-new.html index.html
-
-mv src/App.js src/App-old.js
-mv src/App-new.jsx src/App.jsx
-
-mv src/index.css src/index-old.css
-mv src/index-new.css src/index.css
-
-mv src/components/Navbar.jsx src/components/Navbar-old.jsx
-mv src/components/Navbar-new.jsx src/components/Navbar.jsx
-```
-
-2. **Restart the development server**
-
 ## 👥 User Roles
 
 - **Participant**: Can view events, scan QR codes, earn points, view leaderboard
@@ -220,8 +252,8 @@ mv src/components/Navbar-new.jsx src/components/Navbar.jsx
 
 ### MongoDB Connection Error
 
-- Ensure MongoDB is running
-- Check connection string in `.env`
+- Ensure the Atlas or local MongoDB connection string is valid
+- Check `MONGO_URI` in `server/.env`
 
 ### CORS Errors
 
@@ -229,7 +261,7 @@ mv src/components/Navbar-new.jsx src/components/Navbar.jsx
 
 ### JWT Errors
 
-- Ensure `JWT_SECRET` is set in server `.env`
+- Ensure `JWT_SECRET` and `JWT_REFRESH_SECRET` are set in `server/.env`
 
 ## 📝 License
 

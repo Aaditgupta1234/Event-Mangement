@@ -106,12 +106,35 @@ app.use('/api/leaderboard', leaderboardRoutes);
 app.use('/api/export', exportRoutes);
 
 app.get('/health', (req, res) => {
-    res.json({
-        success: true,
-        status: 'healthy',
-        timestamp: new Date().toISOString(),
-        mongodb: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected'
-    });
+    const isConnected = mongoose.connection.readyState === 1;
+
+    if (!isConnected) {
+        return res.status(503).json({
+            success: false,
+            status: 'degraded',
+            timestamp: new Date().toISOString(),
+            mongodb: 'disconnected'
+        });
+    }
+
+    mongoose.connection.db.admin().ping()
+        .then(() => {
+            res.json({
+                success: true,
+                status: 'healthy',
+                timestamp: new Date().toISOString(),
+                mongodb: 'connected'
+            });
+        })
+        .catch((error) => {
+            logger.error('Health check MongoDB ping failed', { error: error.message });
+            res.status(503).json({
+                success: false,
+                status: 'degraded',
+                timestamp: new Date().toISOString(),
+                mongodb: 'unreachable'
+            });
+        });
 });
 
 app.get('/', (req, res) => {

@@ -10,7 +10,7 @@ import {
   getHostRequests, approveHostRequest, rejectHostRequest
 } from '../api';
 import { exportToExcel, ExportButton } from '../utils/exportUtils.jsx';
-import API from '../api';
+import API, { getApiBaseUrl } from '../api';
 
 export default function AdminDashboard() {
   const { user, isAdmin } = useAuth();
@@ -484,10 +484,7 @@ export default function AdminDashboard() {
   const handleExportUsers = async () => {
     setExportLoading(true);
     try {
-      await exportToExcel(
-        `${import.meta.env.VITE_API_URL || 'http://localhost:4000/api'}/export/users`,
-        `FestifyXR-Users-${new Date().toLocaleDateString()}.xlsx`
-      );
+      await exportToExcel(`${getApiBaseUrl()}/export/users`, `FestifyXR-Users-${new Date().toLocaleDateString()}.xlsx`);
       alert('✅ Users exported successfully!');
     } catch (error) {
       alert('❌ Error exporting users: ' + (error.message || 'Unknown error'));
@@ -499,10 +496,7 @@ export default function AdminDashboard() {
   const handleExportParticipants = async () => {
     setExportLoading(true);
     try {
-      await exportToExcel(
-        `${import.meta.env.VITE_API_URL || 'http://localhost:4000/api'}/export/participants`,
-        `FestifyXR-Participants-${new Date().toLocaleDateString()}.xlsx`
-      );
+      await exportToExcel(`${getApiBaseUrl()}/export/participants`, `FestifyXR-Participants-${new Date().toLocaleDateString()}.xlsx`);
       alert('✅ Participants exported successfully!');
     } catch (error) {
       alert('❌ Error exporting participants: ' + (error.message || 'Unknown error'));
@@ -514,10 +508,7 @@ export default function AdminDashboard() {
   const handleExportHosts = async () => {
     setExportLoading(true);
     try {
-      await exportToExcel(
-        `${import.meta.env.VITE_API_URL || 'http://localhost:4000/api'}/export/hosts`,
-        `FestifyXR-Hosts-${new Date().toLocaleDateString()}.xlsx`
-      );
+      await exportToExcel(`${getApiBaseUrl()}/export/hosts`, `FestifyXR-Hosts-${new Date().toLocaleDateString()}.xlsx`);
       alert('✅ Hosts exported successfully!');
     } catch (error) {
       alert('❌ Error exporting hosts: ' + (error.message || 'Unknown error'));

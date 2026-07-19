@@ -9,7 +9,7 @@ import {
   getAnnouncements, createAnnouncement, updateAnnouncement, deleteAnnouncement
 } from '../api';
 import { exportToExcel, ExportButton } from '../utils/exportUtils.jsx';
-import API from '../api';
+import API, { getApiBaseUrl } from '../api';
 
 export default function HostDashboard() {
   const { user, isHost } = useAuth();
@@ -411,10 +411,7 @@ export default function HostDashboard() {
   const handleExportParticipants = async () => {
     setExportLoading(true);
     try {
-      await exportToExcel(
-        `${import.meta.env.VITE_API_URL || 'http://localhost:4000/api'}/export/participants`,
-        `FestifyXR-Participants-${new Date().toLocaleDateString()}.xlsx`
-      );
+      await exportToExcel(`${getApiBaseUrl()}/export/participants`, `FestifyXR-Participants-${new Date().toLocaleDateString()}.xlsx`);
       alert('✅ Participants exported successfully!');
     } catch (error) {
       alert('❌ Error exporting participants: ' + (error.message || 'Unknown error'));

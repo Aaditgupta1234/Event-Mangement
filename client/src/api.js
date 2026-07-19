@@ -1,7 +1,13 @@
 import axios from 'axios';
 
+const apiBaseUrl = import.meta.env.VITE_API_URL;
+
+if (!apiBaseUrl && import.meta.env.PROD) {
+    throw new Error('VITE_API_URL is required in production');
+}
+
 const API = axios.create({
-    baseURL: import.meta.env.VITE_API_URL || 'http://localhost:4000/api'
+    baseURL: apiBaseUrl || 'http://localhost:4000/api'
 });
 
 // Flag to prevent multiple refresh attempts
@@ -141,5 +147,7 @@ export const getLeaderboard = () => API.get('/leaderboard');
 export const getHostRequests = () => API.get('/auth/host-requests');
 export const approveHostRequest = (id) => API.post(`/auth/host-requests/${id}/approve`);
 export const rejectHostRequest = (id, reason) => API.post(`/auth/host-requests/${id}/reject`, { reason });
+
+export const getApiBaseUrl = () => API.defaults.baseURL;
 
 export default API;
