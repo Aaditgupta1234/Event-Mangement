@@ -1,6 +1,10 @@
 const request = require('supertest');
 const mongoose = require('mongoose');
-const app = require('../server');
+const bcrypt = require('bcryptjs');
+process.env.NODE_ENV = 'test';
+process.env.JWT_SECRET = process.env.JWT_SECRET || 'test-jwt-secret-test-jwt-secret-test-jwt-secret';
+process.env.JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || 'test-refresh-secret-test-refresh-secret-test';
+const app = require('../app');
 const User = require('../models/User');
 const Event = require('../models/Event');
 
@@ -36,7 +40,8 @@ describe('Auth API Tests', () => {
             expect(res.statusCode).toBe(201);
             expect(res.body.success).toBe(true);
             expect(res.body.user).toHaveProperty('email', 'test@example.com');
-            expect(res.body).toHaveProperty('token');
+            expect(res.body).toHaveProperty('tokens');
+            expect(res.body.tokens).toHaveProperty('accessToken');
         });
 
         it('should fail with invalid email', async () => {
@@ -95,7 +100,8 @@ describe('Auth API Tests', () => {
 
             expect(res.statusCode).toBe(200);
             expect(res.body.success).toBe(true);
-            expect(res.body).toHaveProperty('token');
+            expect(res.body).toHaveProperty('tokens');
+            expect(res.body.tokens).toHaveProperty('accessToken');
         });
 
         it('should fail with wrong password', async () => {
@@ -133,8 +139,17 @@ describe('Events API Tests', () => {
             await mongoose.connect(testDbUri);
         }
 
+        await User.deleteMany({});
+
+        await User.create({
+            name: 'Admin User',
+            email: 'admin@test.com',
+            password: await bcrypt.hash('admin123', 12),
+            role: 'admin'
+        });
+
         // Create a regular user
-        const userRes = await request(app)
+        await request(app)
             .post('/api/auth/signup')
             .send({
                 name: 'Regular User',
@@ -142,7 +157,15 @@ describe('Events API Tests', () => {
                 password: 'test123',
                 role: 'participant'
             });
-        token = userRes.body.token;
+
+        const userLoginRes = await request(app)
+            .post('/api/auth/login')
+            .send({
+                email: 'user@test.com',
+                password: 'test123'
+            });
+
+        token = userLoginRes.body.tokens.accessToken;
 
         // Create an admin user
         const adminRes = await request(app)
@@ -153,7 +176,17 @@ describe('Events API Tests', () => {
                 password: 'admin123',
                 role: 'admin'
             });
-        adminToken = adminRes.body.token;
+
+        expect(adminRes.statusCode).toBe(403);
+
+        const adminLoginRes = await request(app)
+            .post('/api/auth/login')
+            .send({
+                email: 'admin@test.com',
+                password: 'admin123'
+            });
+
+        adminToken = adminLoginRes.body.tokens.accessToken;
     });
 
     afterAll(async () => {
@@ -176,7 +209,9 @@ describe('Events API Tests', () => {
                 desc: 'Test description'
             });
 
-            const res = await request(app).get('/api/events');
+            const res = await request(app)
+                .get('/api/events')
+                .set('Authorization', `Bearer ${token}`);
 
             expect(res.statusCode).toBe(200);
             expect(res.body.success).toBe(true);

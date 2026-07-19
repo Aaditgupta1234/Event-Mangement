@@ -9,6 +9,9 @@ const { signupValidation, loginValidation } = require('../utils/validators');
 const logger = require('../utils/logger');
 const { protect, adminOnly } = require('../utils/authMiddleware');
 
+const findActiveHostByEmail = (email) => User.findOne({ email, role: 'host' });
+const findPendingHostRequestByEmail = (email) => HostRequest.findOne({ email, status: 'pending' });
+
 // Generate access token (short-lived: 15 minutes)
 const generateAccessToken = (user) => {
   return jwt.sign(
@@ -64,21 +67,24 @@ router.post('/signup', signupValidation, asyncHandler(async (req, res, next) => 
     throw new AppError('Admin accounts cannot be created through signup', 403);
   }
 
-  // Check if user exists
-  const existingUser = await User.findOne({ email });
-  if (existingUser) {
-    throw new AppError('Email already registered', 400);
-  }
-
   // Hash password
   const hashedPassword = await bcrypt.hash(password, 12);
 
   // If role is host, create a pending host request instead
   if (role === 'host') {
-    // Check if host request already exists
-    const existingRequest = await HostRequest.findOne({ email });
+    const existingHost = await findActiveHostByEmail(email);
+    if (existingHost) {
+      throw new AppError('Active host already exists for this email', 400);
+    }
+
+    const existingRequest = await findPendingHostRequestByEmail(email);
     if (existingRequest) {
       throw new AppError('Host request already exists for this email', 400);
+    }
+
+    const existingUser = await User.findOne({ email });
+    if (existingUser && existingUser.role !== 'participant') {
+      throw new AppError('Only participant accounts can submit host requests', 400);
     }
 
     const hostRequest = await HostRequest.create({
@@ -100,6 +106,12 @@ router.post('/signup', signupValidation, asyncHandler(async (req, res, next) => 
         requestedAt: hostRequest.requestedAt
       }
     });
+  }
+
+  // Check if user exists for participant signup
+  const existingUser = await User.findOne({ email });
+  if (existingUser) {
+    throw new AppError('Email already registered', 400);
   }
 
   // Create user for participant
@@ -252,19 +264,32 @@ router.post('/host-requests/:id/approve', protect, adminOnly, asyncHandler(async
     throw new AppError('This request has already been reviewed', 400);
   }
 
-  // Check if user already exists
-  const existingUser = await User.findOne({ email: hostRequest.email });
-  if (existingUser) {
-    throw new AppError('User with this email already exists', 400);
+  // If a host already exists for this email, do not create another one.
+  const activeHost = await findActiveHostByEmail(hostRequest.email);
+  if (activeHost) {
+    throw new AppError('Active host already exists for this email', 400);
   }
 
-  // Create the host user
-  const user = await User.create({
-    name: hostRequest.name,
-    email: hostRequest.email,
-    password: hostRequest.password,
-    role: 'host'
-  });
+  const existingUser = await User.findOne({ email: hostRequest.email });
+
+  let user;
+  if (existingUser) {
+    if (existingUser.role !== 'participant') {
+      throw new AppError('Only participant accounts can be promoted to host', 400);
+    }
+
+    existingUser.name = hostRequest.name;
+    existingUser.role = 'host';
+    user = await existingUser.save();
+  } else {
+    // Create the host user
+    user = await User.create({
+      name: hostRequest.name,
+      email: hostRequest.email,
+      password: hostRequest.password,
+      role: 'host'
+    });
+  }
 
   // Update host request status
   hostRequest.status = 'approved';

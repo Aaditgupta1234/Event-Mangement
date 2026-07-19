@@ -1,11 +1,18 @@
 services:
   - type: web
-    name: festifyxr-client
-    runtime: static
-    rootDir: client
-    buildCommand: npm ci && npm run build
-    staticPublishPath: ./dist
-    routes:
-      - type: rewrite
-        source: /*
-        destination: /index.html
+    name: festifyxr-api
+    env: node
+    rootDir: server
+    plan: starter
+    buildCommand: npm ci
+    preDeployCommand: npm run migrate:host-request-indexes
+    startCommand: npm start
+    healthCheckPath: /health
+    autoDeploy: true
+
+# Set the following environment variables in Render for this service:
+# - MONGO_URI
+# - JWT_SECRET
+# - JWT_REFRESH_SECRET
+# - CORS_ORIGIN
+# - LOG_LEVEL
